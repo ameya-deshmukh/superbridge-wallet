@@ -1,4 +1,15 @@
 use clap::{ Parser, Subcommand, ValueEnum, Args };
+use bip39::{ Language, Mnemonic, MnemonicType, Seed };
+use solana_sdk::{ 
+    signature:: { keypair_from_seed, write_keypair_file, read_keypair_file, Keypair }, 
+    signer::Signer,
+    pubkey::Pubkey,
+    native_token::{ lamports_to_sol, sol_to_lamports }
+};
+use solana_client::rpc_client::RpcClient;
+use std::str::FromStr;
+
+const SERVER_URL: &str = "https://api.devnet.solana.com";
 
 #[derive(Debug, Parser)]
 #[command(name = "superbridge-wallet", about = "multichain-wallet")]
@@ -19,12 +30,18 @@ enum Token {
     USDC
 }
 
+#[derive(Debug, Copy, Clone, PartialEq, Eq, ValueEnum)]
+enum Source {
+    Generated,
+    Imported
+}
+
 // generate wallet erc/spl, import wallet erc/spl, check token balance erc/spl, transfer
 #[derive(Debug, Subcommand)]
 enum Commands {
     // generate wallet
-    #[command(arg_required_else_help = true)]
-    Generate {
+    #[command(arg_required_else_help = true)] // TODO: add mnemonic & passphrase || add output file
+    Generate { 
         #[arg(long = "std")]
         standard: Standard
     },
@@ -38,10 +55,12 @@ enum Commands {
     // check balance
     #[command(arg_required_else_help = true)]
     Balance {
-        #[arg(long = "std")] // TODO: add short = "std"
+        #[arg(long = "std")]
         standard: Standard,
         #[arg(short = 't', long = "tkn")]
-        token: Token
+        token: Token,
+        #[arg(long = "src")]
+        source: Source
         // TODO: any other stuff required to import
     },
     // transfer tokens
@@ -59,18 +78,63 @@ enum Commands {
     }
 }
 
-fn main()  {
-    let args = CLI::parse();
+fn generate_keypair_spl() {
+    let mnemonic_type: MnemonicType = MnemonicType::for_word_count(12).unwrap();
+    let mnemonic: Mnemonic = Mnemonic::new(mnemonic_type, Language::English);
+
+    let seed: Seed = Seed::new(&mnemonic, "");
     
+    let keypair: solana_sdk::signature::Keypair = keypair_from_seed(seed.as_bytes()).unwrap();
+    write_keypair_file(&keypair, "./spl/generated/keypair.json").unwrap();
+
+    println!("Mnemonic: {:?}", mnemonic);
+    println!("Public key: {}", &keypair.pubkey());
+}
+
+fn get_balance_spl(address: &str, client: &RpcClient) {
+    let pubkey: Pubkey = Pubkey::from_str(address).unwrap();
+    let balance: u64 = client.get_balance(&pubkey).unwrap();
+
+    println!("Balance for {}: {}", address, lamports_to_sol(balance));
+}
+
+fn main()  {
+    let args: CLI = CLI::parse();
+    let client: RpcClient = RpcClient::new(SERVER_URL);
+
     match args.command {
         Commands::Generate { standard } => {
-            todo!()
+            match standard {
+                Standard::ERC => {},
+                Standard::SPL => {
+                    generate_keypair_spl();
+                }
+            }
         }
         Commands::Import { standard } => {
             todo!()
         }
-        Commands::Balance { standard, token } => {
-            todo!()
+        Commands::Balance { standard, token, source } => {
+            match source {
+                Source::Generated => {
+                    match &standard {
+                        Standard::ERC => {},
+                        Standard::SPL => {
+                            let keypair: Keypair = read_keypair_file("./spl/generated/keypair.json").unwrap();
+                            get_balance_spl(&keypair.pubkey().to_string(), &client);
+                        }
+                    }
+                },
+                Source::Imported => {
+                    match &standard {
+                        Standard::ERC => {},
+                        Standard::SPL => {
+                            let keypair: Keypair = read_keypair_file("./spl/imported/keypair.json").unwrap();
+                            get_balance_spl(&keypair.pubkey().to_string(), &client);
+                        }
+                    }
+                }
+            }
         }
         Commands::Transfer { source, destination, token, amount } => {
             todo!()
