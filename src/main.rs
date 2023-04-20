@@ -50,6 +50,8 @@ enum Commands {
     Import {
         #[arg(long = "std")]
         standard: Standard,
+        #[arg(long, value_delimiter = ',')]
+        mnemonic: Vec<String>
         // TODO: any other stuff required to import
     },
     // check balance
@@ -91,6 +93,18 @@ fn generate_keypair_spl() {
     println!("Public key: {}", &keypair.pubkey());
 }
 
+fn import_wallet_spl(phrase: Vec<String>) {
+    let phrase: &String = &phrase.join(" ");
+
+    let mnemonic: Mnemonic = Mnemonic::from_phrase(phrase, Language::English).unwrap();
+    let seed: Seed = Seed::new(&mnemonic, "");
+
+    let keypair: Keypair = keypair_from_seed(&seed.as_bytes()).unwrap();
+    write_keypair_file(&keypair, "./spl/imported/keypair.json").unwrap();
+
+    println!("Imported wallet with public key: {}", &keypair.pubkey());
+}
+
 fn get_balance_spl(address: &str, client: &RpcClient) {
     let pubkey: Pubkey = Pubkey::from_str(address).unwrap();
     let balance: u64 = client.get_balance(&pubkey).unwrap();
@@ -111,8 +125,13 @@ fn main()  {
                 }
             }
         }
-        Commands::Import { standard } => {
-            todo!()
+        Commands::Import { standard, mnemonic } => {
+            match standard {
+                Standard::ERC => {},
+                Standard::SPL => {
+                    import_wallet_spl(mnemonic);
+                }
+            }
         }
         Commands::Balance { standard, token, source } => {
             match source {
