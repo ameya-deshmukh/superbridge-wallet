@@ -39,6 +39,8 @@ enum Commands {
     Balance {
         #[arg(short, long)] // TODO: add short = "std"
         standard: Standard,
+        #[arg(short, long)]
+        token: Token
         // TODO: any other stuff required to import
     },
     #[command(arg_required_else_help = true)]
@@ -63,7 +65,7 @@ fn main()  {
         Commands::Import { standard } => {
             todo!()
         }
-        Commands::Balance { standard } => {
+        Commands::Balance { standard, token } => {
             todo!()
         }
         Commands::Transfer { source, destination, token, amount } => {
