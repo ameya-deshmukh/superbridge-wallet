@@ -1,7 +1,7 @@
 # Superbridge Wallet 
 
 ## About
-Superbridge is a CLI wallet that supports bridging of assets across chains using the [Wormhole] (https://wormhole.com/) cross-chain messaging protocol. 
+Superbridge is a CLI wallet that supports bridging of assets across chains using the [Wormhole](https://wormhole.com/) cross-chain messaging protocol. 
 
 ## Acknowledgements 
 
