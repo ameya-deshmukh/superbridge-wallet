@@ -1,10 +1,15 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import './Popup.css'
 import landingtop from "/img/landing/landing-top.png"
 import landingbottom from "/img/landing/landing-bottom.png"
 
 function App() {
   const [crx, setCrx] = useState('create-chrome-ext')
+  useEffect(() => {
+    setTimeout(() => {
+      window.location.href = "/setup.html"
+    }, 3000)
+  }, [])
 
   return (
     <main>
